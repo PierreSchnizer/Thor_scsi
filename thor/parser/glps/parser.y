@@ -53,7 +53,7 @@
  /* static FILE* pflat; */
 
  /* ["key_0", "elements_0", "key_1", "elements_1", ... ] */
- char** beam_lines; 
+ char** beam_lines;
 
  /*! size of beam_lines array, twice of the number of beam lines */
  int n_beam_lines = 0;
@@ -65,31 +65,31 @@
    yyin to point to a new file, probably using fopen()
  */
  extern FILE* yyin;
- int yywrap(void) { 
-     return 1; 
+ int yywrap(void) {
+     return 1;
  };
  int yylex();
  int yyerror(char* s);
- 
+
 
  /*! Free symbol table (linked list) */
  static void free_symb_tab(SP_SYMB_LST* head);
 
- void sym_addfunc(char* name, double(*func)(double));
+ void sym_addfunc(char* name, double(*func)(const double x));
  SP_SYMB_LST *sym_append();
- 
+
  /* SP_STMT_LST* statement_def(char* elem); */
  SP_STMT_LST* statement_add(char* elem);
- void statement_add_property_list(SP_STMT_LST* elem, 
+ void statement_add_property_list(SP_STMT_LST* elem,
                                 SP_SYMB_LST *head);
- 
+
  char* beamline_dup(char* bl);
  void beamline_add(char* bl, char* elem);
  char* beamline_reverse(char* bl);
-  
+
  void free_stmt_table();
  void free_beamline();
-  
+
 %}
 
 %union {
@@ -110,7 +110,7 @@
 %token <str> BL
 
 %token SET TITLE SHOW INCLUDE
-%token BEND BPM CAVITY CORR DRIFT MARKER MULTIPOLE INV LINE QUAD SEXT WIGGLER 
+%token BEND BPM CAVITY CORR DRIFT MARKER MULTIPOLE INV LINE QUAD SEXT WIGGLER
 
 %left ','
 %left '-' '+'
@@ -125,15 +125,15 @@
 
 %%
 
-statement_list: statement 
+statement_list: statement
         |       statement_list statement
         ;
 
-statement: ID '=' expression ';' { 
+statement: ID '=' expression ';' {
     $1->value = $3;
     /* printf("%s = %f\n", $1->name, $3); */
    }
-|  ID '=' '(' expression_list ')' ';' { 
+|  ID '=' '(' expression_list ')' ';' {
     SP_SYMB_LST *p = $4, *q;
     size_t i=0, n = 0;
     /* printf(" %s:\n", $1->name); */
@@ -169,15 +169,15 @@ statement: ID '=' expression ';' {
         }
         if ($3->s) fprintf(stdout, "%s", $3->s);
         if($3->value) fprintf(stdout, "%f", $3->value);
-        
+
         fprintf(stdout, "\n");
     }
     free($1);
  }
-|ACTION ',' STRING ';' { 
+|ACTION ',' STRING ';' {
     SP_STMT_LST *p = statement_add($1);
     /* strncpy(lat_title, strbuf+1, strlen(strbuf)-2);*/
-    if(lat_title) free(lat_title); 
+    if(lat_title) free(lat_title);
     /* lat_title = strdup($3);  */
     lat_title = (char*)malloc(strlen($3)+1);
     strcpy(lat_title, $3);
@@ -203,7 +203,7 @@ statement: ID '=' expression ';' {
     free($3);
    }
 |  ACTION ',' mag_property_list ';' {
-    SP_STMT_LST *p =  statement_add($1); 
+    SP_STMT_LST *p =  statement_add($1);
     /* fprintf(stdout, "--> mp %s %f %s\n", $3->name, $3->value, $3->s); */
     /* fprintf(stdout, "--> mp %s %f %s\n", $3->next->name, $3->next->value, $3->next->s); */
     statement_add_property_list(p, $3);
@@ -225,15 +225,15 @@ statement: ID '=' expression ';' {
     free($1);
     free_symb_tab($3);
    }
-| ELEMENT ':' ID ';' { 
-    SP_STMT_LST *p =  statement_add($1);    
+| ELEMENT ':' ID ';' {
+    SP_STMT_LST *p =  statement_add($1);
     p->mag = strdup($3->name);
     p->type = ELEMT_THINKICK;
     /* the ID has been added to the symbtab in scanner, remove it here */
     sym_remove_id($3->name);
     /* printf("BPM: %s\n", $1->name); */}
 | ELEMENT ':' ID ',' mag_property_list ';' {
-    SP_STMT_LST *p =  statement_add($1); 
+    SP_STMT_LST *p =  statement_add($1);
     statement_add_property_list(p, $5);
     p->type = ELEMT_CAVITY;
     p->mag = strdup($3->name);
@@ -270,7 +270,7 @@ statement: ID '=' expression ';' {
 |  ID ID ';' {
     /* such as old tracy lattice, "define lattice;" */
     fprintf(stderr, "ERROR: Line %d, Syntax error:\n  %s %s;\n", lineno, $1->name, $2->name);
-    if (str_case_cmp($1->name, "define") == 0 && 
+    if (str_case_cmp($1->name, "define") == 0 &&
         str_case_cmp($2->name, "lattice") == 0) {
         fprintf(stderr, "\nThe old Tracy-II lattice is obsolete, please check the document for new format.\n");
     }
@@ -278,7 +278,7 @@ statement: ID '=' expression ';' {
  }
 ;
 
-beamline: BL { 
+beamline: BL {
     $$ = $1;
     /* fprintf(stderr, "---+-> %s\n", $$); */
  }
@@ -324,7 +324,7 @@ beamline: BL {
     /* fprintf(stderr, "---+-> %d * %s, n = %d\n", ndup, $3, n*(ndup+1)); */
     /* fprintf(stderr, "---+-> %d * %s, n = %d\n", ndup, stmp, n*(ndup+1)); */
     strcpy(ret, stmp);
-    
+
     for (i = 1; i < ndup; ++i) {
         /* fprintf(stderr, "%d: %s  %s\n", i, ret, stmp); */
         strcat(ret, ",");
@@ -336,7 +336,7 @@ beamline: BL {
     /* fprintf(stderr, "---+-> %s\n", ret); */
     $$ = ret;
    }
-|  INV BL { 
+|  INV BL {
     char* ret;
     /* fprintf(stderr, "Reverse Beam Line: %s\n", $2); */
     ret = beamline_reverse($2);
@@ -352,7 +352,7 @@ beamline: BL {
    }
 ;
 
-mag_property_list: mag_property { 
+mag_property_list: mag_property {
     $$ = $1;
  }
 | mag_property_list ',' mag_property {
@@ -362,12 +362,12 @@ mag_property_list: mag_property {
     p->next = $3;
 }
 ;
-  
+
 mag_property: MAG_PROPERTY '=' expression {
     /* */
     $1->value = $3;
     if ($1->next) {
-        fprintf(stderr, 
+        fprintf(stderr,
                 "--+-> PROPERTY should be independent!\n");
         fprintf(stderr, "  %s = %f\n", $1->name, $3);
         exit(-1);
@@ -380,7 +380,7 @@ mag_property: MAG_PROPERTY '=' expression {
     $1->s = strdup($3);
     free($3);
     if ($1->next) {
-        fprintf(stderr, 
+        fprintf(stderr,
                 "--+-> PROPERTY should be independent!\n");
         fprintf(stderr, "  %s = %s\n", $1->name, $3);
         exit(-1);
@@ -417,7 +417,7 @@ mag_property: MAG_PROPERTY '=' expression {
     $$->s = NULL;
     $$->next = NULL;
     /* printf(")\n"); */
-  }       
+  }
 ;
 
 expression_list: expression ',' expression {
@@ -426,7 +426,7 @@ expression_list: expression ',' expression {
     $$->s = NULL;
     $$->vec_size = 0;
     $$->vec = NULL;
-    $$->next = (SP_SYMB_LST*) malloc(sizeof(SP_SYMB_LST)); 
+    $$->next = (SP_SYMB_LST*) malloc(sizeof(SP_SYMB_LST));
     $$->next->value = $3;
     $$->next->s = NULL;
     $$->next->vec_size = 0;
@@ -451,7 +451,7 @@ expression: expression '+' expression { $$ = $1 + $3; }
 |  expression '*' expression { $$ = $1 * $3; }
 |  expression '/' expression {
         if($3 == 0.0){
-            yyerror("Divide by zero");  
+            yyerror("Divide by zero");
         /* printf("%d\n", $3); */
         }
         else $$ = $1 / $3;
@@ -497,9 +497,9 @@ void get_parser_version(int* vmaj, int* vmin, int* vpat, int* vrev)
     }
     while(isdigit(*p) && p >= s) --p;
     if (p < s) return;
-    
+
     *vrev = atoi(p+1);
-    
+
     free(s);
 }
 
@@ -515,7 +515,7 @@ int str_case_cmp(const char* ps1, const char* ps2)
         c1 = *ps1++;
         c2 = *ps2++;
         if (c1 >='A' && c1 <= 'Z') c1 += 'a' - 'A';
-        if (c2 >='A' && c2 <= 'Z') c2 += 'a' - 'A';        
+        if (c2 >='A' && c2 <= 'Z') c2 += 'a' - 'A';
         v = (int) c1 - (int) c2;
     }while ((v==0) && (c1 != '\0'));
 
@@ -667,8 +667,8 @@ SP_SYMB_LST* sym_remove_node(SP_SYMB_LST* sp)
     return NULL;
 }
 
-/*! 
- * \brief look up a symbol table entry, add if not present 
+/*!
+ * \brief look up a symbol table entry, add if not present
  *
  * \param s symbol, case insensitive.
  * \return An symbol table node.
@@ -743,10 +743,10 @@ void print_symb_tab(SP_SYMB_LST* p)
     /* fprintf(stdout, "--------------- END -----------\n"); */
 }
 
-/*! \brief Free symbol table (linked list) 
+/*! \brief Free symbol table (linked list)
  */
 void free_symb_tab(SP_SYMB_LST* head)
-{    
+{
   SP_SYMB_LST *sp = head, *ph = head;
     while(ph) {
         sp = ph;
@@ -798,8 +798,8 @@ int yyerror(char* s)
 
 
 int get_statement_property_text(
-    const char* statement, 
-    const char* property, 
+    const char* statement,
+    const char* property,
     char** val)
 {
     SP_STMT_LST *st = stmt_table;
@@ -854,28 +854,28 @@ SP_PRPT_LST *get_statement_property(
 {
     /* assuming elem is already there */
     SP_PRPT_LST *p = elem->property, *t = NULL;
-    
+
     if (!p) {
         /* Add a new on, initialize */
         elem->property = (SP_PRPT_LST*) malloc(sizeof(SP_PRPT_LST));
         p = elem->property;
         p->str = NULL;
     } else {
-        while (p != NULL && 
+        while (p != NULL &&
                str_case_cmp(propty, p->property) != 0) {
             t = p;
             p = p->next;
         }
         if (p == NULL) {
             /* Append a new one, initialize */
-            t->next = malloc(sizeof(SP_PRPT_LST));
+            t->next = (SP_PRPT_LST *) malloc(sizeof(SP_PRPT_LST));
             p = t->next;
             p->str = NULL;
         }else{
             return p;
         }
     }
-    
+
     p->property = strdup(propty);
     p->nval = 0;
     p->val = NULL;
@@ -889,12 +889,12 @@ SP_PRPT_LST *get_statement_property(
  * append to the end.
  */
 void statement_add_property_list(
-    SP_STMT_LST *elem, 
+    SP_STMT_LST *elem,
     SP_SYMB_LST *head)
-{       
+{
     SP_SYMB_LST *p = head;
     int i = 0;
-    
+
     SP_PRPT_LST *prpt;
 
     /* */
@@ -902,18 +902,18 @@ void statement_add_property_list(
         prpt = get_statement_property(elem, p->name);
         prpt->nval = 0;
         if (p->s) {
-            prpt->str = strdup(p->s); 
+            prpt->str = strdup(p->s);
             /* fprintf(stdout, "--> %s %s\n", prpt->property, prpt->str); */
         }else {
             prpt->str = NULL;
             if (prpt->val) free(prpt->val);
             if (p->vec_size > 0) {
-                prpt->val = malloc(sizeof(double)*p->vec_size);
+                prpt->val = (double *) malloc(sizeof(double)*p->vec_size);
                 for (i = 0; i < p->vec_size; ++i)
                     prpt->val[i] = p->vec[i];
                 prpt->nval = p->vec_size;
             } else {
-                prpt->val = malloc(sizeof(double));
+                prpt->val = (double *) malloc(sizeof(double));
                 prpt->nval = 1;
                 prpt->val[0] = p->value;
             }
@@ -939,14 +939,14 @@ void free_stmt_table()
             /* fprintf(stdout, "  %s %s\n", prpt_head->property, prpt_head->str); */
             prpt_p = prpt_head;
             prpt_head = prpt_head->next;
-            
+
             free(prpt_p->property);
             if (prpt_p->val) free(prpt_p->val);
             if (prpt_p->str) free(prpt_p->str);
             free(prpt_p);
         }
         free(p);
-    }    
+    }
 }
 
 /*!
@@ -954,7 +954,7 @@ void free_stmt_table()
 SP_STMT_LST* statement_def(const char* elem)
 {
   SP_STMT_LST *p = stmt_table;
-  
+
   while(p) {
     if (str_case_cmp(elem, p->name) == 0) return p;
     /* fprintf(stderr, "%s %s\n", elem, p->name); */
@@ -971,7 +971,7 @@ SP_STMT_LST* statement_add(char* elem)
     SP_STMT_LST *p = stmt_table;
 
     if (stmt_table == NULL) {
-        stmt_table = malloc(sizeof(SP_STMT_LST));
+        stmt_table = (SP_STMT_LST *) malloc(sizeof(SP_STMT_LST));
         p = stmt_table;
         p->ifam = 1;
     }else {
@@ -980,7 +980,7 @@ SP_STMT_LST* statement_add(char* elem)
             p = p->next;
         }while(p);
 
-        stmt_table_tail->next = malloc(sizeof(SP_STMT_LST));
+        stmt_table_tail->next = (SP_STMT_LST *) malloc(sizeof(SP_STMT_LST));
         p = stmt_table_tail->next;
         p->ifam = stmt_table_tail->ifam + 1;
     }
@@ -989,7 +989,7 @@ SP_STMT_LST* statement_add(char* elem)
     p->mag  = NULL;
     p->property = NULL;
     p->next = NULL;
-    
+
     stmt_table_tail = p;
     return p;
 }
@@ -999,9 +999,9 @@ SP_STMT_LST* statement_add(char* elem)
 /*! \brief Get the index of a beamline.
  *
  * \param bl Beamline name.
- * \return 0 if not defined if < 0, else return the index in beam_lines, 
+ * \return 0 if not defined if < 0, else return the index in beam_lines,
  * (location of elements, key = elements - 1)
- * 
+ *
  * beam_lines has size of 2*n, for a n elements beam line. 2*i is name, 2*i+1 is definition (a string of all elements).
  */
 int beamline_def(char* bl)
@@ -1080,7 +1080,7 @@ char* beamline_reverse(char* bl)
     size_t i = 0, j =0;
     char *ret = strdup(bl);
     reverse_str(ret, strlen(ret));
-    
+
     for (i = 0; i < strlen(ret); ++i) {
         if (*(ret+i) != ',') continue;
         reverse_str(ret+j, i-j);
@@ -1096,7 +1096,7 @@ char* beamline_reverse(char* bl)
 
 void free_beam_lines()
 {
-    int i = 0; 
+    int i = 0;
     for (i = 0; i < n_beam_lines; ++i) {
         free(beam_lines[i]);
     }
@@ -1117,7 +1117,7 @@ int print_elements(SP_STMT_LST* pelem)
     SP_PRPT_LST *prpt;
     int i = 0;
     fprintf(stdout, "----------- elements -------------\n");
-    while (pelem) { 
+    while (pelem) {
         fprintf(stdout, "%s: %s, ", pelem->name, pelem->mag);
         prpt = pelem->property;
         while (prpt) {
@@ -1139,7 +1139,7 @@ int print_elements(SP_STMT_LST* pelem)
 int parse_lattice(const char* f)
 {
     /* add mathematical function support */
-    extern double sqrt(), exp(), log(), atan(), sin(), cos(), fabs();
+    //extern double sqrt(), exp(), log(), atan(), sin(), cos(), fabs();
 
     /* initialize the random generator */
     srand(0);
@@ -1196,10 +1196,10 @@ int free_lattice()
     free_stmt_table();
     free_beam_lines();
 
-    free_symb_tab(symtab); 
+    free_symb_tab(symtab);
     symtab = NULL;
 
-    free(lat_title); 
+    free(lat_title);
     lat_title = NULL;
 }
 
@@ -1223,10 +1223,10 @@ int parse_lattice_flat(char* f, char* flat)
         fprintf(stdout, "Output: %s %zd\n", str, strlen(str));
     }
     else fprintf(stdout, "Not found output\n");
-    
+
     /*
     double d, *v;
-    if (get_statement_property_double("set", "energy", &d)) 
+    if (get_statement_property_double("set", "energy", &d))
         fprintf(stdout, "energy: %f\n", d);
     else fprintf(stdout, "Not found energy\n");
 
@@ -1243,7 +1243,7 @@ int parse_lattice_flat(char* f, char* flat)
     save_elements_db(stmt_table, str);
     #endif
     free(str);
-    
+
     /* output every beam line */
     for (i = 0; i < n_beam_lines; i+=2) {
         char *p = beam_lines[i+1];
@@ -1269,14 +1269,14 @@ int parse_lattice_flat(char* f, char* flat)
     } else if (n_beam_lines > 0) {
         fprintf(stderr, "Error: can not open %s to write flat file.\n", flat);
         exit(-1);
-    } 
+    }
 
     free_lattice();
     return 0;
 }
 
 
-/*! \brief get the path and root file name 
+/*! \brief get the path and root file name
  *
  * allocated new mem, need free by caller.
  */
@@ -1294,7 +1294,7 @@ char *get_path_root(char *f)
     if (s == f) return NULL;
     n = s - f;
 
-    r = malloc(sizeof(char)*(n+1));
+    r = (char *) malloc(sizeof(char)*(n+1));
     strncpy(r, f, n);
     r[n] = '\0';
 
@@ -1316,7 +1316,7 @@ int parse_lattice_xml(char* lat, char* xml)
     int vmaj, vmin, vpatch, vrevision;
     SP_STMT_LST *pstmt;
     SP_PRPT_LST *prpt;
-    
+
     /*
     str = get_path_root(f);
     xml = malloc(sizeof(char)*(strlen(str)+5));
@@ -1329,7 +1329,7 @@ int parse_lattice_xml(char* lat, char* xml)
         fprintf(stderr, "[ERROR] Can not open XML file to write\n");
         return -1;
     };
-    
+
     fprintf(stderr, "XML: %s\n", xml);
 
     get_parser_version(&vmaj, &vmin, &vpatch, &vrevision);
@@ -1341,7 +1341,7 @@ int parse_lattice_xml(char* lat, char* xml)
     }
 
     fprintf(pf, "<?xml version=\"1.0\" ?>\n");
-    fprintf(pf, "<latparser version=\"%d.%d.%d\" revision=\"%d\" build=\"%s\" />\n", 
+    fprintf(pf, "<latparser version=\"%d.%d.%d\" revision=\"%d\" build=\"%s\" />\n",
             vmaj, vmin, vpatch, vrevision, __DATE__);
     /* output every element */
     /* print_elements(stmt_table); */
@@ -1392,10 +1392,10 @@ int parse_lattice_ini(char* f)
     int vmaj, vmin, vpatch, vrevision;
     SP_STMT_LST *pstmt;
     SP_PRPT_LST *prpt;
-    
+
     str = get_path_root(f);
 
-    ini = malloc(sizeof(char)*(strlen(str)+5));
+    ini = (char *) malloc(sizeof(char)*(strlen(str)+5));
     strcpy(ini, str);
     strcat(ini, ".ini");
     free(str);
@@ -1416,7 +1416,7 @@ int parse_lattice_ini(char* f)
         return -1;
     }
     fprintf(pf, "[__info__]\n"
-            "  version=%d.%d.%d\n  revision=%d\n  build=%s\n\n", 
+            "  version=%d.%d.%d\n  revision=%d\n  build=%s\n\n",
             vmaj, vmin, vpatch, vrevision, __DATE__);
     /* output every element */
     /* print_elements(stmt_table); */
@@ -1475,10 +1475,10 @@ void print_flat_element(FILE* pf, SP_STMT_LST *elem)
     int h = 1300;
     /* type code */
     fprintf(pf, " %3d", elem->type);
-    
+
     prpt = get_statement_property(elem, "method");
     method = prpt->nval ? prpt->val[0] : 0;
-    
+
     prpt = get_statement_property(elem, "n");
     N = prpt->nval ? prpt->val[0] : 0;
 
@@ -1585,8 +1585,8 @@ void print_flat_element(FILE* pf, SP_STMT_LST *elem)
                     (int)prpt->val[i*6], prpt->val[i*6+1],
                     prpt->val[i*6+2], prpt->val[i*6+3],
                     prpt->val[i*6+4], prpt->val[i*6+5]);
-        }  
-		  
+        }
+
         break;
     }
 }
@@ -1602,7 +1602,7 @@ int print_flat_lattice(FILE* pf, char* bl)
     int n_elem = 0;
 	char **elem;
 	int *child;
-	
+
     SP_STMT_LST *pelem;
     n = strlen(bl);
 
@@ -1612,10 +1612,10 @@ int print_flat_lattice(FILE* pf, char* bl)
 
     for (k = i = 0; i < n + 1; ++i) {
         if (bl[i] != ',' && bl[i] != '\0') continue;
-  
+
         strncpy(s, bl+k, i-k);
         s[i-k] = '\0';
-        
+
         elem[n_elem] = strdup(s);
         child[n_elem%n] = 1;
         for (j = n_elem-1; j >= 0; --j) {
@@ -1624,15 +1624,15 @@ int print_flat_lattice(FILE* pf, char* bl)
                 break;
             }
         }
-       
-        
+
+
         pelem = stmt_table;
         while(pelem) {
             if (str_case_cmp(s, pelem->name) == 0) break;
             pelem = pelem->next;
         }
 
-        fprintf(pf, "%-15s %4d %4d %4d\n", 
+        fprintf(pf, "%-15s %4d %4d %4d\n",
                 s, pelem->ifam, child[n_elem], n_elem+1);
 
         print_flat_element(pf, pelem);
@@ -1645,7 +1645,7 @@ int print_flat_lattice(FILE* pf, char* bl)
 
     free(child);
 
-    for (i = 0; i < n_elem; ++i) 
+    for (i = 0; i < n_elem; ++i)
         free(elem[i]);
     free(elem);
     free(s);
@@ -1653,7 +1653,7 @@ int print_flat_lattice(FILE* pf, char* bl)
     return 0;
 }
 
-SP_STMT_LST* get_statement_list() 
+SP_STMT_LST* get_statement_list()
 {
     return stmt_table;
 }

@@ -18,6 +18,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+/* #include <string> */
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -28,7 +29,7 @@
 
 #ifdef __cplusplus
 extern "C" {
- #endif 
+ #endif
 
     #define GLPS_VER_MAJOR 1
     #define GLPS_VER_MINOR 0
@@ -41,12 +42,12 @@ extern "C" {
      * T_CAVITY= 2,  T_THINKICK=  3,  T_WIGGLER = 4}
      */
     enum SP_ELEMENT_TYPE {
-        ELEMT_USERDEF = 0, ELEMT_MARKER    =-1, 
+        ELEMT_USERDEF = 0, ELEMT_MARKER    =-1,
         ELEMT_DRIFT   = 2, ELEMT_MULTIPOLE =3,
         ELEMT_CAVITY  = 4, ELEMT_WIGGLER   =5,
         ELEMT_THINKICK= 6,
         STMT_LINE = 64,
-        STMT_ACTION_SET = 128, STMT_ACTION_TITLE          
+        STMT_ACTION_SET = 128, STMT_ACTION_TITLE
     } ;
 
 
@@ -60,7 +61,7 @@ extern "C" {
      */
     struct symbol_table_rec {
         struct symbol_table_rec *next;
-        double     (*funcptr)();    /* cos, sin, ... */
+        double     (*funcptr)(double x);    /* cos, sin, ... */
         char              *name;    /* PI, L, ... */
         /* char      *element;*/    /* PUE01, ..... */
         /* char       *family;*/    /* Quad, BPM, Bend, Sextupole, ... */
@@ -101,11 +102,11 @@ extern "C" {
     };
     typedef struct statement_rec SP_STMT_LST;
 
-    /*!\brief parse the lattice file into internal data structure 
+    /*!\brief parse the lattice file into internal data structure
      */
     int parse_lattice(const char* f);
 
-    /*! \brief release the internal structure storing parsed lattice 
+    /*! \brief release the internal structure storing parsed lattice
      */
     int free_lattice();
 
@@ -119,11 +120,11 @@ extern "C" {
     /* ----------------------------------------- */
 
     SP_SYMB_LST *sym_find_append(char* s);
-    SP_SYMB_LST* sym_remove_id(char* s);    
-    SP_SYMB_LST* sym_remove_node(SP_SYMB_LST* s);    
+    SP_SYMB_LST* sym_remove_id(char* s);
+    SP_SYMB_LST* sym_remove_node(SP_SYMB_LST* s);
 
     /*! \brief get the definition of a statement, including action, element
-     *   and beamline 
+     *   and beamline
      */
     SP_STMT_LST *statement_def(const char* elem);
     int beamline_def(char* bl);
@@ -148,7 +149,7 @@ extern "C" {
         char* class;
         char* property;
     } KEYWORD[] = {
-        {0, "MARKER,MARK", ""}, 
+        {0, "MARKER,MARK", ""},
         {1, "DRIFT,DRIF", "L"}};
 
     enum {MARKER=0, BPM = 1,
