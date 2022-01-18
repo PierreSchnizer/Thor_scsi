@@ -36,14 +36,14 @@ extern SP_SYMB_LST* symtab;
 /* open multiple lattice file, push/pop the stack. */
 #define MAX_INCLUDE_DEPTH 10
 static int lat_file_stack_ptr = 0;
-static YY_BUFFER_STATE lat_file_stack[MAX_INCLUDE_DEPTH]; 
+static YY_BUFFER_STATE lat_file_stack[MAX_INCLUDE_DEPTH];
 static int lat_file_lineno[MAX_INCLUDE_DEPTH];
 
- /* processing property statement in an definition 
-  * e.g. L = 0.1, property=(1,2,3,4,5); 
+ /* processing property statement in an definition
+  * e.g. L = 0.1, property=(1,2,3,4,5);
   * every time, when meet an identifier, we record its name,
   * in case we need it on the right hand side. we have to keep its value later.
-  * i.e. vec/vec_size/value 
+  * i.e. vec/vec_size/value
   */
 #define NEW_PROPERTY_SYMBOL(stxt)   \
  yylval.symp = (SP_SYMB_LST*) malloc(sizeof(SP_SYMB_LST)); \
@@ -63,7 +63,7 @@ static int lat_file_lineno[MAX_INCLUDE_DEPTH];
   /* NUM   -?[0-9]+ */
   /* REAL  -?(([0-9]+)|(([0-9]*\.)?[0-9]+)([eE][-+]?[0-9]+)?)  */
 NUM   [0-9]+
-REAL  (([0-9]+)|(([0-9]*\.)?[0-9]+)([eE][-+]?[0-9]+)?) 
+REAL  (([0-9]+)|(([0-9]*\.)?[0-9]+)([eE][-+]?[0-9]+)?)
 WS    [ \t\n]*
 IDENTIFIER  [A-Za-z][A-Za-z0-9_]*
 
@@ -75,9 +75,9 @@ IDENTIFIER  [A-Za-z][A-Za-z0-9_]*
   /* --------------------------------------- */
 
   /* rules */
-<INITIAL><<EOF>>  { 
+<INITIAL><<EOF>>  {
  #ifdef DEBUG
-    fprintf(stderr, "--- Reach the End of Lattice without an \"END\" statement. --\n"); 
+    fprintf(stderr, "--- Reach the End of Lattice without an \"END\" statement. --\n");
  #endif
 
     if ( --lat_file_stack_ptr < 0) {
@@ -97,34 +97,34 @@ IDENTIFIER  [A-Za-z][A-Za-z0-9_]*
      }
 
   /* Syntax error at first line will also be copied into linebuf */
-<*>\n.*  { 
-    ++lineno; 
+<*>\n.*  {
+    ++lineno;
     strncpy(linebuf, yytext+1, MAX_LINE_BUF_SIZE-1);
     linebuf[MAX_LINE_BUF_SIZE-1] = '\0';
-    yyless(1); 
+    yyless(1);
  #ifdef DEBUG
-    fprintf(stdout, "%d: %s\n", lineno, linebuf); 
+    fprintf(stdout, "%d: %s\n", lineno, linebuf);
  #endif
    }
 
-   /* Comment */ 
+   /* Comment */
 "{"                    { BEGIN(sc_comment); }
 <sc_comment>[^"}"\n]+  ;
 <sc_comment>\n         {++lineno;}
-<sc_comment>"}"+       { 
-    BEGIN(INITIAL); 
+<sc_comment>"}"+       {
+    BEGIN(INITIAL);
     /* fprintf(stderr, "--- COMMENT ---\n"); */}
 
-!.*\n  { ++lineno; /* fprintf(stderr, "\n---- Comment ----\n"); */} 
+!.*\n  { ++lineno; /* fprintf(stderr, "\n---- Comment ----\n"); */}
 
-<*>\"[^\"\n]*(\n|\")  { 
+<*>\"[^\"\n]*(\n|\")  {
     /* String, doesn't span > 1 line */
     /* TODO: remove this constraint */
     /* assuming "string", here remove the " */
     yylval.str = (char* )malloc(strlen(yytext));
     strncpy(yylval.str, yytext+1, strlen(yytext)-2);
     yylval.str[strlen(yytext)-2] = '\0';
-    return STRING; 
+    return STRING;
    }
 
 <*>{REAL} { yylval.dval = atof(yytext); return NUMBER; }
@@ -162,7 +162,7 @@ include[ \t\n]*","[ \t\n]*[^;\t\n]+";" {
         fprintf(stderr, "Error: Cannot open file %s\n", incfile);
         exit(-1);
     }
-    
+
     yy_switch_to_buffer(yy_create_buffer(yyin, YY_BUF_SIZE));
     lineno = 0;
 
@@ -171,19 +171,19 @@ include[ \t\n]*","[ \t\n]*[^;\t\n]+";" {
 
 <INITIAL>end{WS}";" { /* logical end of file */
     #ifdef DEBUG
-        fprintf(stderr, "-- End of Lattice --\n"); 
+        fprintf(stderr, "-- End of Lattice --\n");
     #endif
-    return 0; } 
+    return 0; }
 
 <INITIAL>{IDENTIFIER}/{WS}":"{WS}"line"{WS}"=" {
     SP_SYMB_LST* sp;
-    BEGIN(sc_beamline); 
+    BEGIN(sc_beamline);
     /* fprintf(stderr, "\n----> Line: %s\n", yytext); */
     /* NEW_PROPERTY_SYMBOL(yytext); */
     sp = sym_find_append(yytext);
     sp->lineno = lineno;
     yylval.symp = sp;
-    
+
     return ID;}
 
 
@@ -197,14 +197,14 @@ include[ \t\n]*","[ \t\n]*[^;\t\n]+";" {
     return ELEMENT;
  }
 
-<INITIAL>{IDENTIFIER}/{WS},  { 
-    BEGIN(sc_action); 
+<INITIAL>{IDENTIFIER}/{WS},  {
+    BEGIN(sc_action);
     /* fprintf(stderr, "Action: %s\n", yytext); */
     yylval.str = strdup(yytext);
-    return ACTION; 
+    return ACTION;
  }
 
-<sc_beamline>LINE/{WS}=   { 
+<sc_beamline>LINE/{WS}=   {
     /* fprintf(stderr, "\n---> beamline: \n", yytext); */
     return LINE; }
 
@@ -212,22 +212,22 @@ include[ \t\n]*","[ \t\n]*[^;\t\n]+";" {
     /* convert_key_case(yytext); */
  #ifdef DEBUG
     fprintf(stderr, "Action: %s\n", yytext);
- #endif  
-    
+ #endif
+
     NEW_PROPERTY_SYMBOL(yytext);
     return MAG_PROPERTY; }
 
-<sc_element>{IDENTIFIER}/{WS}= { 
-    /* general element */ 
+<sc_element>{IDENTIFIER}/{WS}= {
+    /* general element */
  #ifdef DEBUG
     fprintf(stderr, "Magnet Property: %s\n", yytext);
  #endif
 
     NEW_PROPERTY_SYMBOL(yytext);
-    return MAG_PROPERTY; 
+    return MAG_PROPERTY;
 }
 
-<sc_beamline>{IDENTIFIER} { 
+<sc_beamline>{IDENTIFIER} {
     /* BL: Line=(ID1, ID2, ...) */
     int i = beamline_def(yytext);
     /* fprintf(stdout, "Define beam line: %s\n", yytext); */
@@ -251,22 +251,22 @@ include[ \t\n]*","[ \t\n]*[^;\t\n]+";" {
 
         yylval.str = strdup(yytext);
     }
-    return BL; 
+    return BL;
  }
 
-<*>{IDENTIFIER} { 
+<*>{IDENTIFIER} {
     SP_SYMB_LST* sp = sym_find_append(yytext);
     yylval.symp = sp;
-  
+
  #ifdef DEBUG
-    fprintf(stdout, "\n[DBG] Got ID: %s\n", yytext);  
+    fprintf(stdout, "\n[DBG] Got ID: %s\n", yytext);
  #endif
-    
-    return ID; 
+
+    return ID;
 }
 
 
-<*>{IDENTIFIER}"."{IDENTIFIER} { 
+<*>{IDENTIFIER}"."{IDENTIFIER} {
     /* NEW_PROPERTY_SYMBOL(yytext); */
     SP_SYMB_LST *sp;
     SP_STMT_LST *pstmt;
@@ -281,7 +281,7 @@ include[ \t\n]*","[ \t\n]*[^;\t\n]+";" {
     prop = p+1;
 
     s = NULL;
-    
+
     /* searching for element and its property */
     pstmt = statement_def(pelem);
     if (!pstmt) {
@@ -330,4 +330,3 @@ include[ \t\n]*","[ \t\n]*[^;\t\n]+";" {
 . {fprintf(stderr, "\nUnknown:|%c|, Skip\n", yytext[0]); }
 
 %%
-
