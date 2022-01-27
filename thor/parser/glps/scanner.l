@@ -18,6 +18,7 @@
 
 #include "lattice.h"
 #include "parser.h"
+#include "glpserror.h"
 #include <math.h>
 #include <string.h>
 #include <ctype.h>
