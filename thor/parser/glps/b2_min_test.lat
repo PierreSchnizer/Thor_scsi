@@ -1,0 +1,9 @@
+! define lattice; ringtype = 1;
+
+DG: DRIFT, L = 0.6155;
+DG2: DRIFT, L = 0.6;
+
+acell: BL=(DG, DG2);
+
+cell: ring, symmetry = 1;
+end;
