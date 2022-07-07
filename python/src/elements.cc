@@ -72,6 +72,7 @@ public:
 };
 
 class PyClassicalMagnet: public tse::ClassicalMagnet {
+public:
 	using tse::ClassicalMagnet::ClassicalMagnet;
 	int getMainMultipoleNumber(void) const override {
 		PYBIND11_OVERRIDE_PURE(
@@ -81,9 +82,16 @@ class PyClassicalMagnet: public tse::ClassicalMagnet {
 			/* Argument(s) */
 			);
 	}
+#if 0
+	void setMultipoles(const std::vector<thor_scsi::core::cdbl_intern> coeffs) {
+		auto muls = std::make_shared<thor_scsi::core::TwoDimensionalMultipoles>(thor_scsi::core::TwoDimensionalMultipoles(coeffs));
+		tse::ClassicalMagnet::setMultipoles(muls);
+	}
+#endif
 };
 
 class PyRadDelInt: public tse::RadiationDelegateInterface {
+public:
 	using tse::RadiationDelegateInterface::RadiationDelegateInterface;
 	void view(const tse::ElemType& elem, const ss_vect<double> &ps, const enum tsc::ObservedState os, const int cnt) override {
 		PYBIND11_OVERRIDE_PURE(void, tse::RadiationDelegateInterface, view, elem, ps, os, cnt);
@@ -94,6 +102,7 @@ class PyRadDelInt: public tse::RadiationDelegateInterface {
 };
 
 class PyRadDel: public tse::RadiationDelegate {
+public:
 	using tse::RadiationDelegate::RadiationDelegate;
 	void view(const tse::ElemType& elem, const ss_vect<double> &ps, const enum tsc::ObservedState os, const int cnt) override {
 		PYBIND11_OVERRIDE(void, tse::RadiationDelegate, view, elem, ps, os, cnt);
@@ -105,6 +114,7 @@ class PyRadDel: public tse::RadiationDelegate {
 
 
 class PyRadDelKickInt: public tse::RadiationDelegateKickInterface {
+public:
 	using tse::RadiationDelegateKickInterface::RadiationDelegateKickInterface;
 	void view(const tse::FieldKickAPI& elem, const ss_vect<double> &ps, const enum tsc::ObservedState os, const int cnt) override {
 		PYBIND11_OVERRIDE_PURE(void, tse::RadiationDelegateKickInterface, view, elem, ps, os, cnt);
@@ -115,6 +125,7 @@ class PyRadDelKickInt: public tse::RadiationDelegateKickInterface {
 };
 
 class PyRadDelKick: public tse::RadiationDelegateKick {
+public:
 	using tse::RadiationDelegateKick::RadiationDelegateKick;
 	void view(const tse::FieldKickAPI& elem, const ss_vect<double> &ps, const enum tsc::ObservedState os, const int cnt) override {
 		PYBIND11_OVERRIDE(void, tse::RadiationDelegateKick, view, elem, ps, os, cnt);
@@ -498,11 +509,13 @@ void py_thor_scsi_init_elements(py::module &m)
 	mpole_type
 		.def(py::init<const Config &>());
 
+
 	py::class_<tse::ClassicalMagnet, PyClassicalMagnet, std::shared_ptr<tse::ClassicalMagnet>> cm(m, "ClassicalMagnet", mpole_type);
 	cm
 		.def("getMultipoles",            &tse::ClassicalMagnet::getMultipoles)
 		//.def("getBegninMultipoles",      &tse::ClassicalMagnet::getBegninMultipoles)
-		// .def("setMultipoles",            &tse::ClassicalMagnet::setMultipoles)
+		.def("setMultipoles",            py::overload_cast<std::shared_ptr<tsc::TwoDimensionalMultipoles>>(&tse::ClassicalMagnet::setMultipoles))
+		.def("setMultipoles",            py::overload_cast<const std::vector<tsc::cdbl_intern>>(&PyClassicalMagnet::setMultipoles))
 		.def("getMainMultipoleNumber",   &tse::ClassicalMagnet::getMainMultipoleNumber)
 		.def("getMainMultipoleStrength", &tse::ClassicalMagnet::getMainMultipoleStrength)
 		.def("setMainMultipoleStrength", py::overload_cast<const double>(&tse::ClassicalMagnet::setMainMultipoleStrength))

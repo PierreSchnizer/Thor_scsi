@@ -107,6 +107,10 @@ from dataclasses import dataclass
 from typing import Sequence
 import copy
 
+import logging
+
+logger = logging.getLogger("thor-scsi-lib")
+
 
 @dataclass
 class ElementInfo:
@@ -123,23 +127,31 @@ class Property:
     def __init__(
         self, *, element_info: ElementInfo, set_method_name: str, get_method_name: str
     ):
-        self.element_info = ElementInfo
+        self.element_info = element_info
         self.get_method_name = get_method_name
         self.set_method_name = set_method_name
 
     def set(self, *, element, value):
         method = getattr(element, self.set_method_name)
-        return method(value)
+        try:
+            r = method(value)
+        except Exception as exc:
+            logger.error(
+                f"Failed to execute {method} with arg {value}"
+                f" type argument {type(value)}: {exc}"
+            )
+            raise exc
+        return r
 
-    def get(self, *, element, value):
+    def get(self, *, element):
         method = getattr(element, self.get_method_name)
-        return method(value)
+        return method()
 
     def __repr__(self):
         cls_name = self.__class__.__name__
         txt = (
-            f"{cls_name}(element_info={self.element_info}"
-            f"set_method_name={self.set_method_name},"
+            f"{cls_name}(id={id(self)}, element_info={self.element_info},"
+            f" set_method_name={self.set_method_name},"
             f" get_method_name={self.get_method_name})"
         )
         return txt
@@ -165,6 +177,15 @@ class EngineeringCommand:
 
     t_property: Property
 
+    def __copy__(self):
+        """
+        Ensure that property is a copy too
+        """
+        p = copy.copy(self.t_property)
+        return self.__class__(
+            scale_factors=self.scale_factors, add_factors=self.add_factors, t_property=p
+        )
+
 
 @dataclass
 class EngineeringDistributionCommand:
@@ -188,10 +209,24 @@ class EngineeringDistributionCommand:
     # used. many of these just use these properties
     loc: float
     size: float
+
+    #: a method of the random generator that is later used when
+    #: the random number generator is evaluated
     distribution_name: str
 
     # find out how to use size properly
     vector_length: int
+
+    def __copy__(self):
+        prop = copy.copy(self.t_property)
+        obj = self.__class__(
+            t_property=prop,
+            loc=self.loc,
+            size=self.size,
+            distribution_name=self.distribution_name,
+            vector_length=self.vector_length,
+        )
+        return obj
 
     def _create_factors(self, method):
         raise AssertionError("Requires to be implemented in a derived class")
@@ -248,25 +283,29 @@ def apply_factors(
        * How to apply it to the different offsets and angle ?
        *  Or how to apply it to scalars and vectors ?
 
+       * Should it apply to a new accelerator
     """
 
     if copy:
-        acc = elements.copy()
+        elements = elements.copy()
 
     if copy:
         all_indices = [cmd.property.elment_info.element_index for cmd in commands]
         all_indices = set(all_indices)
-        acc.copy_elements(element_indices=all_indices)
+        elements.copy_elements(element_indices=all_indices)
 
     # Iterate over the dataset and apply
     for cmd in commands:
         # Within this command it is assumed that the index is good enough
         # to go ahead
-        element = elements[cmd.t_property.element_info.element_index]
+        info = cmd.t_property.element_info
+        element = elements[info.element_index]
 
-        value = cmd.t_property.get(element)
+        value = cmd.t_property.get(element=element)
         n_value = cmd.scale_factors * value + cmd.add_factors
-        cmd.t_property.set(element, n_value)
+        cmd.t_property.set(element=element, value=n_value)
+
+    return elements
 
 
 def create_commands(
@@ -329,19 +368,18 @@ def create_commands_for_randomised_state(
 
 
 def create_distribution_commands(
-    element_indices: Sequence[int], reference_command: EngineeringDistributionCommand
+    element_infos: Sequence[ElementInfo],
+    reference_command: EngineeringDistributionCommand,
 ) -> Sequence[EngineeringDistributionCommand]:
     """
     """
 
-    def new_command(element_index: int) -> EngineeringDistributionCommand:
+    def new_command(info: ElementInfo) -> EngineeringDistributionCommand:
         cmd = copy.copy(reference_command)
-
-        ElementInfo(element_index=element_index)
-        cmd.element_index = element_index
+        cmd.t_property.element_info = info
         return cmd
 
-    r = [new_command(idx) for idx in element_indices]
+    r = [new_command(info) for info in element_infos]
     return r
 
 

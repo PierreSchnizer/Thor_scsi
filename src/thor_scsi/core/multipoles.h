@@ -76,7 +76,7 @@ namespace thor_scsi::core {
 		   Just allocates an set of zero multipoles
 		 */
 		TwoDimensionalMultipoles(const unsigned int h_max=max_multipole);
-		TwoDimensionalMultipoles(std::vector<cdbl_intern> const coeffs);
+		TwoDimensionalMultipoles(const std::vector<cdbl_intern> coeffs);
 		virtual inline ~TwoDimensionalMultipoles(void){};
 		// Why do I need a copy constructor ?? Did I miss an assignment operator
 		// TwoDimensionalMultipoles(const TwoDimensionalMultipoles& o);

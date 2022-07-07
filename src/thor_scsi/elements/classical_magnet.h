@@ -40,6 +40,17 @@ namespace thor_scsi::elements {
 			return tmp;
 		}
 
+		inline void setMultipoles(std::shared_ptr<thor_scsi::core::TwoDimensionalMultipoles> mul) {
+			this->setFieldInterpolator(mul);
+		}
+		/*
+		 * Put here as I am not getting it into the python interface in a straight forward fashion
+		 */
+		inline void setMultipoles(const std::vector<thor_scsi::core::cdbl_intern> coeffs) {
+			auto muls = std::make_shared<thor_scsi::core::TwoDimensionalMultipoles>(thor_scsi::core::TwoDimensionalMultipoles(coeffs));
+			this->setMultipoles(muls);
+		}
+
 		inline void setMainMultipoleStrength(const Config &config, const int n){
 			this->getMultipoles()->setMultipole(n, config.get<double>("K"));
 		}
