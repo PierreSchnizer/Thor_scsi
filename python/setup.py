@@ -29,7 +29,8 @@ d = gsl_conf.gsl_config()
 
 # How to define where the thor scsi library is located?
 prefix = os.path.abspath(os.path.join(os.path.dirname(__name__), os.pardir, os.pardir))
-prefix = os.path.abspath(os.path.join(os.environ["HOME"], ".local"))
+prefix = os.path.abspath(os.path.join(os.path.dirname(__name__), os.pardir, "local"))
+# prefix = os.path.abspath(os.path.join(os.environ["HOME"], ".local"))
 from pybind11.setup_helpers import ParallelCompile
 
 # Optional multithreaded build
@@ -65,7 +66,7 @@ ext_modules = [
                 "src/accelerator.cc",
             ]
         ),
-        include_dirs=[d["gsl_include"]] + [os.path.join(prefix, "include")],
+        include_dirs=[d["gsl_include"]] + [os.path.join(prefix, "include"), os.path.join("usr", "local", "include")],
         # define_macros=[("_GLIBCXX_DEBUG", 1), ("_GLIBCXX_DEBUG_PEDANTIC", 1)],
         library_dirs=(
             [os.path.join(prefix, "lib")]
