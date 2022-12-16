@@ -57,22 +57,17 @@ First clone the repository using
    git clone https://github.com/jbengtsson/thor-scsi-lib.git
 
 
-change to the directory (persumably) `thor-scsi-lib`. If that was
-successful please check currently out the tree `radiate` with
+change to the directory (persumably) `thor-scsi-lib`. 
+
+Then initialise submodules using the following command
 
 .. code:: shell
 
-   git checkout radiate
+   git submodule update --init --recursive
 
-
-Then initialise submodules using the following commands
-
-.. code:: shell
-
-   git submodule init
-   git submodule update
-
-
+*NB*: this command currently will pull a subrepository (`cmake4epics`).
+This repository currently does not support (llvm/clang). Thus build on
+MAC currently fails. A fix is currently worked on.
 
 
 Getting ready to build
@@ -121,7 +116,7 @@ If build was successful use
 
 .. code:: shell
 
-  cmake --install . --prefix=/path/to/install/to
+  cmake --install . --prefix /path/to/install/to
 
 
 with `/path/to/install/to` the absolute path of the directory you
@@ -135,8 +130,9 @@ would like to install to.
 	can be installed using `setup.py` too
 
 
-Installing python module
-------------------------
+Installing python module thor_scsi and gtpsa
+--------------------------------------------
+
 
 Currently the python wrapper is automatically built when the c++ library is built.
 Additionally a `setup.py` script is provided that can be used to use the standard
@@ -144,6 +140,21 @@ python install procedure.
 
 Before you can use this script, you need to build the c++ library and install it
  to some path (called `/path/to/install/to` above).
+
+Directories with python modules
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Two python modules are provided
+
+* gtpsa: directory src/gtpsa/python
+* thor_scsi: directory python/
+
+Recommandation is to first build gtpsa and then thor scsi.
+The description below refers to both of them. Both directories are 
+refered to as `python` directory below.
+
+Installation instruction for one of the packages
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Change into the repositories `python` directory. Edit the
 `setup.py` file and define the variable `prefix` to contain the path you installed
@@ -174,7 +185,7 @@ Alternatively you could use `pip` e.g.
 to install the package.
 
 **NB**: The c++ library is wrapped as part of the `thor_scsi` python module. If your
-favourite python interpreter is not found, consder defining the `Python3_EXECUTABLE`
+favourite python interpreter is not found, consider defining the `Python3_EXECUTABLE`
 so that it contains the path to your executable
 
 
