@@ -17,9 +17,12 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 if(CMAKE_COMPILER_IS_GNUCXX)
   add_definitions(-g -ggdb -pedantic -Wall)
-  add_definitions(-Wall -Wextra -Wno-unused-parameter -Wno-missing-field-initializers
-
-    )
+  # add_definitions(
+  #  -Wall
+  #  -Wextra
+  #  -Wno-unused-parameter
+  #  -Wno-missing-field-initializers
+  #  )
   #  message(STATUS "Enabling gxx debug preprocessor flags")
   # flame relies on boost ... have to search if ubuntu has a version which supports
   # GNU extra flags ...
@@ -34,12 +37,15 @@ endif()
 find_package(Armadillo REQUIRED)
 
 find_package(PythonInterp 3)
-
+# find_package(Java REQUIRED)
+# message(STATUS "Java include dirs" ${JAVA_INCLUDE_PATH})
+# find_package(JNI REQUIRED)
+# message(STATUS "Jini include dirs" ${JINI_INCLUDE_DIRS})
 # include(CMakeAddFortranSubdirectory)
 
 enable_testing()
 
-set(FLAME_INTERNAL TRUE)
+set(FLAME_INTERNAL True)
 if(FLAME_INTERNAL)
     add_subdirectory(flame)
 else()
@@ -52,10 +58,19 @@ else()
     message(STATUS "Flame include dir ${flame_INCLUDE_DIR}")
 endif()
 
+
+# Need to write proper .cmake
+set(gtpsa_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src/gtpsa/)
+set(gtpsa_cpp_INCLUDE_DIR ${gtpsa_DIR}/c++)
+set(mad_ng_SRC_DIR ${gtpsa_DIR}/mad-ng/src/)
+
+include_directories(
+  ${mad_ng_SRC_DIR}/libgtpsa/
+  ${mad_ng_SRC_DIR}
+  )
+
 # Fortran implementation part
 add_subdirectory(TPSA)
-# C++ implementation part
 add_subdirectory(src)
-
 # python wrapper
 add_subdirectory(python)

@@ -4,7 +4,8 @@
 #include <pybind11/pybind11.h>
 #include <string>
 #include <sstream>
-#include <tps/ss_vect.h>
+#include <gtpsa/ss_vect.h>
+#include <gtpsa/tpsa.hpp>
 #include <tps/tps_type.h>
 
 #ifndef NO_TPSA
@@ -53,10 +54,14 @@ void declare_field(py::module &scsi, const std::string &typestr) {
 }
 
 void py_thor_scsi_init_tps(py::module &m);
+void py_thor_scsi_init_field_interpolation(py::module &m);
 void py_thor_scsi_init_elements(py::module &m);
+void py_thor_scsi_init_aperture(py::module &m);
+void py_thor_scsi_init_radiation(py::module &m);
+void py_thor_scsi_init_observers(py::module &m);
 void py_thor_scsi_init_accelerator(py::module &m);
 void py_thor_scsi_init_config_type(py::module &m);
-void py_thor_scsi_init_arma(py::module &m);
+//void py_thor_scsi_init_arma(py::module &m);
 
 // void py_thor_scsi_init_lattice(py::module_ &m);
 void py_flame_init(py::module &m);

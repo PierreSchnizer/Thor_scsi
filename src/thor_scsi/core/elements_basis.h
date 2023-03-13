@@ -7,21 +7,36 @@
  */
 #include <vector>
 #include <string>
-#include <tps/ss_vect.h>
+// #include <tps/ss_vect.h>
 #include <tps/tps_type.h>
+#include <gtpsa/tpsa_double_variant.hpp>
+#include <gtpsa/ss_vect.h>
+#include <gtpsa/utils.hpp>
 // #include <thor_scsi/core/cells.h>
 #include <thor_scsi/core/internals.h>
 #include <thor_scsi/core/cell_void.h>
+#include <thor_scsi/core/multipole_types.h>
 // #include <thor_scsi/core/elements_enums.h>
 #include <thor_scsi/core/config.h>
 #include <thor_scsi/core/aperture.h>
 
 
-namespace thor_scsi {
-	namespace core {
+namespace thor_scsi::core {
 		//< Element virtual base class.
-		class ElemType : public CellVoid {
-		public:
+		using thor_scsi::core::ConfigType;
+
+        template<class C, typename = typename C::double_type>
+        class ElemTypeKnobbed : public CellVoid {
+        protected:
+		using double_type = typename C::double_type;
+#warning "not yet supporting PL as tpsa"
+		double PL = 0.0;                        ///< Length[m].
+
+        private:
+            // currently only implementing 2D apertures
+            std::shared_ptr<thor_scsi::core::TwoDimensionalAperture> m_aperture;
+
+        public:
 			bool
 			Reverse = true;                   ///< reverse elements: rearange the elements in reveresed order
 			/**
@@ -30,14 +45,21 @@ namespace thor_scsi {
 			 * "length" is option, and is 0.0 if omitted.
 			 *
 			 */
-			inline ElemType(const Config & config) : CellVoid(config) {
-				const double l = config.get<double>("L", 0.0);
-				this->setLength(l);
-			};
+			inline ElemTypeKnobbed(const Config & config)
+				: CellVoid(config)
+				, m_aperture(nullptr)
+				{
+					const double l = config.get<double>("L", 0.0);
+					this->setLength(l);
+				}
 
-			ElemType(ElemType&& o) : CellVoid(std::move(o)), PL(std::move(o.PL)) {
-				// std::cerr << "ElemType move ctor " << this->name <<  std::endl;
-			}
+			ElemTypeKnobbed(ElemTypeKnobbed&& o)
+				: CellVoid(std::move(o))
+				, PL( std::move(o.PL) )
+				, m_aperture( std::move(o.m_aperture) )
+				{
+					// std::cerr << "ElemType move ctor " << this->name <<  std::endl;
+				}
 
 			virtual inline double getLength(void) const final { return this->PL;};
 			/**
@@ -46,15 +68,37 @@ namespace thor_scsi {
 			 * field interpolation treats length 0 special.
 			 *
 			 */
-			virtual inline void setLength(const double length) {
+			virtual inline void setLength(const double& length) {
 				this->PL = length;
 			}
 
 			/**
 			 * Todo: implement taking stream or as ostream operator ....
 			 */
-			virtual void show(std::ostream& strm, int level) const override;
-			// C++ templates not supported for virtual functions.
+			virtual void show(std::ostream& strm, int level) const override
+			{
+				CellVoid::show(strm, level);
+				if(level >= 1){
+					strm << " L="<<this->PL<<"";
+				}
+				if(!this->m_aperture){
+					strm << " aperture=None";
+				} else {
+					strm << " aperture=";
+					this->m_aperture->show(strm, level);
+				}
+				if(!(this->observer())){
+					strm << " observer=None";
+				} else {
+					strm << " observer=";
+					this->observer()->show(strm, level);
+				}
+
+			}
+
+
+
+            // C++ templates not supported for virtual functions.
 			/**
 			 * @brief Propagator step for phase space.
 			 *
@@ -65,8 +109,11 @@ namespace thor_scsi {
 			 *      make config constant (after config has been reworked)
 			 *      rename to propagate!
 			 */
-			virtual void pass(thor_scsi::core::ConfigType &conf, ss_vect<double>    &ps) = 0;
-			virtual void pass(thor_scsi::core::ConfigType &conf, ss_vect<tps>       &ps) = 0;
+			// virtual void propagate(thor_scsi::core::ConfigType &conf, ss_vect<double> &ps) = 0;
+			// virtual void propagate(thor_scsi::core::ConfigType &conf, ss_vect<tps> &ps) = 0;
+			virtual void propagate(ConfigType &conf, gtpsa::ss_vect<double>      &ps) = 0;
+			virtual void propagate(ConfigType &conf, gtpsa::ss_vect<gtpsa::tpsa> &ps) = 0;
+		        // virtual void propagate(ConfigType &conf, gtpsa::ss_vect<tps>         &ps) = 0;
 			/*
 			 * the non linear tps part ... to be made
 			 */
@@ -87,12 +134,12 @@ namespace thor_scsi {
 			 * returns always true if no aperture registered
 			 */
 			template<typename T>
-			inline bool checkAmplitude(const ss_vect<T> &ps){
+			inline bool checkAmplitude(const gtpsa::ss_vect<T> &ps){
 				if(!this->m_aperture){
 					return true;
 				}
-				double x = is_double<T>::cst(ps[x_]);
-				double y = is_double<T>::cst(ps[y_]);
+				double x = gtpsa::cst(ps[x_]);
+				double y = gtpsa::cst(ps[y_]);
 
 				double d = this->m_aperture->isWithin(x, y);
 
@@ -112,16 +159,12 @@ namespace thor_scsi {
 				this->m_aperture = ap;
 			}
 
-		protected:
-			double PL = 0.0;                        ///< Length[m].
-
-		private:
-			// currently only implementing 2D apertures
-			std::shared_ptr<thor_scsi::core::TwoDimensionalAperture> m_aperture;
-
 		};
 
-	}
+        typedef class ElemTypeKnobbed<thor_scsi::core::StandardDoubleType> ElemType;
+        typedef class ElemTypeKnobbed<thor_scsi::core::TpsaVariantType> ElemTypeEng;
+
+
 }
 #endif /*  _THOR_SCSI_CORE_ELEMENTS_BASIS_H_  */
 /*

@@ -1,14 +1,15 @@
 """
 """
 import thor_scsi.lib as tslib
+
+import gtpsa
 from .accelerator import instrument_with_radiators
 import numpy as np
-from scipy.constants import c
+from scipy.constants import c as c0
 from dataclasses import dataclass
 
 from thor_scsi.utils.closed_orbit import compute_closed_orbit
 from thor_scsi.utils.linear_optics import compute_M_diag
-from thor_scsi.utils.phase_space_vector import vec_mat2ss_vect_tps
 from thor_scsi.utils.output import mat2txt, vec2txt
 
 import logging
@@ -41,46 +42,40 @@ class RadiationResult:
 
 
 def compute_circ(acc):
-    return np.sum([elem.getLength() for elem in acc])
+    return np.sum([elem.get_length() for elem in acc])
 
 
 def compute_diffusion_coefficients(rad_del_kicks):
     dD_rad = \
-        np.array([rk.getDiffusionCoefficientsIncrements()
+        np.array([rk.get_diffusion_coefficients_increments()
                   for rk in rad_del_kicks])
     D_rad = np.sum(dD_rad, axis=0)
     return D_rad
 
 
 def compute_rad_prop(acc, calc_config, x0, dE, alpha_rad, D_rad):
-    prt_deb = not False
-
     dof = 3
     J = np.zeros(dof)
     tau = np.zeros(dof)
     eps = np.zeros(dof)
     C = compute_circ(acc)
-    print("\nC = ", C)
+    logger.info("\nC = %5.3f", C)
     U_0 = calc_config.Energy*dE
     for k in range(dof):
         J[k] = 2e0*(1e0+x0[delta_])*alpha_rad[k]/dE
-        tau[k] = -C/(c*alpha_rad[k])
+        tau[k] = -C/(c0*alpha_rad[k])
         eps[k] = -D_rad[k]/(2e0*alpha_rad[k])
 
-    if prt_deb:
-        print("\nE [GeV]     = {:3.1f}".format(1e-9*calc_config.Energy))
-        print("U0 [keV]    = {:3.1f}".format(1e-3*U_0))
-        print("eps         = {:12.6e} {:12.6e} {:12.6e}".
-              format(eps[X_], eps[Y_], eps[Z_]))
-        print("tau [msec]  = {:8.6f} {:8.6f} {:8.6f}".
-              format(1e3*tau[X_], 1e3*tau[Y_], 1e3*tau[Z_]))
-        print("J           = {:8.6f} {:8.6f} {:8.6f}".
-              format(J[X_], J[Y_], J[Z_]))
-        print("alpha_rad   = {:13.6e} {:13.6e} {:13.6e}".
-                format(alpha_rad[X_], alpha_rad[Y_], alpha_rad[Z_]))
+    logger.info("\nE [GeV]     = {:3.1f}\nU0 [keV]    = {:3.1f}\neps         = {:12.6e} {:12.6e} {:12.6e}\ntau [msec]  = {:8.6f} {:8.6f} {:8.6f}\nJ           = {:8.6f} {:8.6f} {:8.6f}\nalpha_rad   = {:13.6e} {:13.6e} {:13.6e}\nD_rad       = {:12.6e} {:12.6e} {:12.6e}".
+                format(1e-9*calc_config.Energy,
+                       1e-3*U_0,
+                       eps[X_], eps[Y_], eps[Z_],
+                       1e3*tau[X_], 1e3*tau[Y_], 1e3*tau[Z_],
+                       J[X_], J[Y_], J[Z_],
+                       alpha_rad[X_], alpha_rad[Y_], alpha_rad[Z_],
+                       D_rad[X_], D_rad[Y_], D_rad[Z_]))
 
-        print("D_rad       = {:12.6e} {:12.6e} {:12.6e}".
-              format(D_rad[X_], D_rad[Y_], D_rad[Z_]))
+    return U_0, J, tau, eps
 
 
 
@@ -88,7 +83,8 @@ def compute_radiation(
     acc: tslib.Accelerator,
     calc_config: tslib.ConfigType,
     E,
-    eps
+    eps,
+    *, desc
 ):
 
     dof = 3
@@ -106,8 +102,8 @@ def compute_radiation(
     M = r.one_turn_map[:6, :6]
 
     logger.info(
-        "M:\n" + mat2txt(M)
-        + "\nx0 =", vec2txt(r.x0)
+        "\nM:\n" + mat2txt(M)
+        + "\n\nx0 =" + vec2txt(r.x0)
     )
 
     calc_config.dE = 0e0
@@ -119,12 +115,17 @@ def compute_radiation(
 
     calc_config.emittance = True
 
-    A_cpy = vec_mat2ss_vect_tps(r.x0, A)
+    #A_cpy = vec_mat2ss_vect_tps(r.x0, A)
+    A_cpy  = gtpsa.ss_vect_tpsa(desc, 1)
+    A_cpy += r.x0
+    A_cpy.set_jacobian(A)
     acc.propagate(calc_config, A_cpy)
 
     D_rad = compute_diffusion_coefficients(rad_del_kicks)
 
-    compute_rad_prop(acc, calc_config, r.x0, dE, alpha_rad, D_rad)
+    U_0, J, tau, eps = compute_rad_prop(acc, calc_config, r.x0, dE, alpha_rad, D_rad)
+
+    return U_0, J, tau, eps
 
 
 # def calculate_radiation(
